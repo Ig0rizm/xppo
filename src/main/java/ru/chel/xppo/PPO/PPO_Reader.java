@@ -56,7 +56,7 @@ public class PPO_Reader {
                 }
                 if (index == 0) lines.remove(i);
                 else {
-                    String sub = (String) line.subSequence(0, index-1);
+                    String sub = (String) line.subSequence(0, index);
                     lines.set(i, sub);
                     i++;
                 }
