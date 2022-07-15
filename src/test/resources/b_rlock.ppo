@@ -1,0 +1,196 @@
+#line 1 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\XbasePPCmd.xh"
+#line 96 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\set.xh"
+#line 104 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\dbcmd.xh"
+#line 107 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\CustomDefs.xh"
+#line 109 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Users\Ig0ri\Desktop\XSharp\g\XSharp\b_rlock.prg"
+//PP #include "inkey.ch"
+#line 1 "C:\XPP\XPPW32_190\INCLUDE\inkey.ch"
+#line 2 "C:\Users\Ig0ri\Desktop\XSharp\g\XSharp\b_rlock.prg"
+//PP #include "bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xsh\common.ch"
+#line 12 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrerr.ch"
+#line 3 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch"
+#line 13 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch"
+MEMVAR Current_File
+#line 13 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\ut.ch"
+#line 14 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\wp.ch"
+#line 15 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+memvar promptlist
+MEMVAR D_EMPTY, D_MAX
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xstd.ch"
+#line 174 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 3 "C:\Users\Ig0ri\Desktop\XSharp\g\XSharp\b_rlock.prg"
+//PP #include "lock.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\lock.ch"
+#line 4 "C:\Users\Ig0ri\Desktop\XSharp\g\XSharp\b_rlock.prg"
+
+static _adrLock := NIL
+
+//PP #define ERR04  4
+//PP #define ERR84 84
+
+********************************************************************************
+*
+*                       Блокировка через базу LOCK.BTR
+*
+Function b_Rlock(btr,cWhat, RetAdrLock,RetWhoLock, NoSay,AdrForLock)
+   memvar lock
+   local st, aSee, cUser:=NIL
+
+btr := iif(( VALTYPE(btr )=="N" ), btr, NIL)
+IF EMPTY(cWhat );cWhat := bSet_Alias(btr) ; END 
+
+   // временная затычка на блокировки досье через оракл
+   if btr!=NIL .and. bSet_Alias(btr)${'HUMAN','NKON','NAMES'} 
+      ProgramError('Устаревший метод блокировки в '+bSet_Alias(btr))
+   endif
+
+   // Определим адрес для блокировки
+   if AdrForLock==NIL
+      if btr==NIL
+         AdrForLock := 0
+      else 
+         AdrForLock := Start_Ad(btr)
+         st := bSet_Pos(btr,AdrForLock)
+         if st != 0
+RetWhoLock := "Указанная запись недоступна! B_ERR="+ALLTRIM(STR(st ))
+            if empty(NoSay)
+               Wait_Wind(RetWhoLock,3)
+            endif
+            return .F.
+         endif
+      endif
+   endif
+
+   // Блокировка
+   PublicOpen("info\lock")
+   aSee := {padr(cWhat,8), AdrForLock}
+   st   := b_Seek(lock,0,aSee,400) 
+   do case
+   case st==4 // Нет в LOCK.BTR - добавим запись
+SF(lock ,"NAME" ,cWhat )
+SF(lock ,"ADR" ,AdrForLock )
+SF(lock ,"USER" ,iNETWHOAMI() )
+      Btrv_Oper(4,lock)
+      st := bSet_Pos(lock,bGet_Pos(lock),400) 
+
+   case st==0 .and. PN(lock,NAME)==aSee[1] .and. PN(lock,ADR)==aSee[2]
+SF(lock ,"USER" ,iNETWHOAMI() )
+      Btrv_Oper(3,lock) // Этот UPDATE блокировку не снимает!
+
+   case st==0 
+      st := 9999  // сломался индекс
+   endcase
+
+   if st==0 // Все отлично заблокировалось!
+      RetAdrLock := bGet_Pos(lock) // Возвратим для pазблокиpовки
+      _AdrLock   := RetAdrLock
+      return .t.
+   endif
+
+   // Повторяем поиск без блокировки, чтобы определить кто заблокировал запись
+   do case
+   case st!=84 // Это не ошибка блокировки
+RetWhoLock := 'Ошибка поиска в LOCK.BTR: '+ALLTRIM(STR(st ))
+   case b_Seek(lock,0,aSee)!=0 
+      RetWhoLock := 'Пропала запись из LOCK.BTR: '+var2char(aSee)
+   case empty(cUser:=rtrim(PN(lock,USER))) 
+      RetWhoLock := 'Пользователь неизвестен'
+   otherwise
+      RetWhoLock := ifempty(u_cFio(cUser), cUser)
+   endcase
+   if empty(NoSay)
+      Wait_Wind("Занято!;^w+^"+RetWhoLock,3)
+   endif
+   RetAdrLock := 0
+return .f.
+
+********************************************************************************
+*
+*              Разблокировка одной записи через базу LOCK.BTR
+*
+* <adrLock> адрес записи в базе LOCK.BTR (возвращается через 3й параметр
+*           функции b_Rlock()              [DEFAULT: последняя заблокированная]
+*
+Procedure b_unRlock(adrLock)
+   memvar lock
+   if pcount()==0
+      adrLock := _AdrLock
+   endif
+   if !empty(adrLock)
+      Btrv_Oper(14,lock,adrLock)
+      adrLock  := 0
+      _AdrLock := 0
+   endif
+return
+
+********************************************************************************
+*
+*   Небольшое расширение функции b_Rlock - не надо имени, все по handler-у
+*
+Function b_RlockBTR(nBtr,AdrForLock, RetAdrLock,RetWhoLock)
+return b_Rlock(nBtr,,@RetAdrLock,@RetWhoLock,RetWhoLock!=NIL,AdrForLock)
+
+********************************************************************************
+*
+Function check_lock(cWhat, adrToCheck)
+   memvar lock
+IF adrToCheck == NIL ;adrToCheck := 0 ; ENDIF 
+   PublicOpen("info\lock")
+return b_SeekGE(lock, 0, {cWhat, adrToCheck})==0;
+ .and. b_update(lock)!=0 //на самом деле возвращается 84 - ошибка блокировки
+
+
+/**
+ * Получить блокировку для объекта
+ *
+ * @param <oObject>     объект DBObject
+ * @return <nPos>       позиция в lock-файле для передачи в b_unRlock()
+ */
+function ObtainLock(oObject)
+   local adrLock := 0
+
+   if b_Rlock(NIL, oObject:ClassName(), @adrLock,,, oObject:id)
+      return adrLock
+   endif
+return 0
+
+
+********************************************************************************
+//PP #ifdef _TEST_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//PP #endif
+********************************************************************************
+
