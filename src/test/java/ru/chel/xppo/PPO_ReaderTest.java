@@ -18,7 +18,7 @@ public class PPO_ReaderTest {
     }
 
     @Test
-    public void readPPOTest1() {
+    public void readPPOTest() {
         URL url = PPO_ReaderTest.class.getClassLoader().getResource("b_rlock.ppo");
 
         List<String> lines = reader.readPPO(url.getPath());

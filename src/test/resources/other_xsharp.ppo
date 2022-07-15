@@ -1,0 +1,248 @@
+#line 1 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\XbasePPCmd.xh"
+#line 96 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\set.xh"
+#line 104 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\dbcmd.xh"
+#line 107 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Program Files (x86)\XSharp\Include\CustomDefs.xh"
+#line 109 "C:\Program Files (x86)\XSharp\Include\XSharpDefs.xh"
+#line 1 "C:\Users\Ig0ri\Desktop\xppo\XSharp\other.prg"
+//PP #include "inkey.ch"
+#line 1 "C:\XPP\XPPW32_190\INCLUDE\inkey.ch"
+#line 2 "C:\Users\Ig0ri\Desktop\xppo\XSharp\other.prg"
+//PP #include "bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xsh\common.ch"
+#line 12 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrerr.ch"
+#line 3 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch"
+#line 13 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch"
+MEMVAR Current_File
+#line 13 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\ut.ch"
+#line 14 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\wp.ch"
+#line 15 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+memvar promptlist
+MEMVAR D_EMPTY, D_MAX
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xstd.ch"
+#line 174 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"
+#line 3 "C:\Users\Ig0ri\Desktop\xppo\XSharp\other.prg"
+//PP #include 'kontrol.ch'
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\kontrol.ch"
+#line 4 "C:\Users\Ig0ri\Desktop\xppo\XSharp\other.prg"
+//PP #include 'ismena.ch'
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\ismena.ch"
+memvar ismena
+#line 5 "C:\Users\Ig0ri\Desktop\xppo\XSharp\other.prg"
+/* Имя     Hомеp  Hачало  Длина  Тип
+KTO           0       1      2    I
+KOGO          1       3      2    I
+*/
+static _aUK := NIL
+
+******************************************************************************
+*
+*                        Получение другого User-а
+*
+Function GetOtherUser(xAddUser)
+   local uReal  := UsReal()
+   local uCreat := UsCreat()
+   local uRight := NIL
+
+   // Выбор UsCreat() (только для программистов)
+   if uReal:isProgrammer()
+      uCreat := _choiceUsCreat(uReal)
+      if uCreat:isEmpty()
+         ResetOtherUser()
+         return .f.
+      endif
+      SetUsCreat(uCreat)
+      _aUK := NIL // Перезагрузка
+   endif
+
+   // Выбор UsRight()
+   if _aUK==NIL
+
+      _aUK := aclone(_AUserKodsToProxy(uCreat))
+      aaddUnique(_aUK, uCreat:nKodIbs)  // добавим для меню самого себя
+      do case // добавим в меню добавочных пользователей
+case ( VALTYPE(xAddUser )=="A" ); aeval(xAddUser,{|u| aaddUnique(_aUK,u) })
+case ( VALTYPE(xAddUser )=="B" ); eval(xAddUser, @_aUK)
+      endcase
+
+   elseif len(_aUK)==1 // не первый вход и только один пользователь
+      ResetOtherUser()
+      return .f.
+   endif
+
+   uRight := _choiceUsRight(_aUK, uCreat)
+   if uRight:isEmpty()
+      ResetOtherUser()
+      return .f.
+   endif
+
+   // Журналируем вход под другим именем
+   if uReal:isProgrammer()
+      if   !uReal:isUser(uCreat); // Зашел под другим именем
+      .or. !uReal:isUser(uRight)  // Или с другими правами
+         JControl(16, uRight, '', 'зашел под именем:'+uCreat:cFio+' с правами: '+uRight:cFio, ArmName()+' Отладочный режим')
+      endif
+   else
+      if !uReal:isUser(uRight)
+         JControl(17, uRight, '', 'зашел под именем: '+uRight:cFio, ArmName())
+      endif
+   endif
+
+   // Установим пользователя, по которому будут проверяться права
+   SetUsRight(uRight)
+
+   if getVyveskaWin()!=NIL // Есть вывеска
+      SayVyveska(padr(uCreat:cFio + iif(uCreat:isUser(uRight),'','->'+uRight:cFio),MaxCoL()-18-16),MaxRow(),16,'bg+/n')
+   endif
+
+return .t.
+
+
+********************************************************************************
+*
+*      Выдает список пользователей, КОТОРЫХ ЗАМЕЩАЕТ указанный пользователь
+*         (не путать с функцией AUsersProxy() - она делает наоборот)
+* 
+Function AUsersToProxy(oUser)
+return xfor(_AUserKodsToProxy(oUser));
+           :map({|uk| oUserIbs(uk) });
+           :filter({|user| user:lCanRunIbs() });
+          :collect()
+
+
+static function _AUserKodsToProxy(oUser)
+   static _nUK := 0
+   static _aUK := {}
+   if _nUK == oUser:nKodIbs
+      return _aUK
+   endif
+   _nUK := oUser:nKodIbs
+
+   // Замена, установленная вручную в АРМ V
+   _aUK := IterGE('info\ismena',0,{_nUK}):toArray('KOGO')
+
+   // Замена по приказу
+   IterSQ({"select u.USER_KOD from IBS.STPRIK s, IBS.USERFIL u "   ;
+          +"where u.DOSS_GLOBAL = s.KOD_ZAM "                      ;
+          +"and    s.VID = 10  " /* iTypeprik():SUBST    */        ;
+          +"and s.STATUS = '1' " /* iStprik():ST_SIGNED  */        ;
+          +"and trunc(sysdate) between s.D1 and s.D2 "             ;
+          +"and s.KOD=",oUser:nKodGlobal, "and u.ABS_KOD=",AbsKod()});
+         :forEach({|it| aaddUnique(_aUK, it:PN(USER_KOD)) })
+
+return _aUK
+
+
+********************************************************************************
+*
+*                  Для программистов выбираем UsCreat()
+*
+static function _choiceUsCreat(uReal)
+   local oUser, gg
+   local cKey  := left(ArmName(),8)+'\BUXNAME'
+   local cUser := padr(GetRegKey(cKey, uReal:cNetName, uReal:nKodIbs), 11)
+   w_Open(0,0,2,40,"┌─┐│┘─└│ ",'n/w','shadow',,,'center')
+W_SetColor('gr+/w,w+/b' )
+   @0,1 say 'Введите имя : '
+gg := GetNew(row(),col(),{|_x| if(pcount()>0, cUser :=_x,cUser )},,'@!K')
+   gg:PostBlock := {|x| oUser:=oUserIbs(iif(val(x:buffer)!=0,val(x:buffer),x:buffer)),oUser:lCanRunIBS() }
+   lreadmodal({gg})
+   WCLOSE()
+   if lastkey()==27
+      return oUserEmpty()
+   endif
+   SetRegKey(cKey, oUser:cNetName, uReal:nKodIbs)
+return oUser
+
+
+********************************************************************************
+*
+*                  Выбираем UsRight()
+*
+static function _choiceUsRight(aUK, uCreat)
+   local aMenu, i
+
+   if len(aUK)==1 // Только сам
+      return oUserIbs(aUK[1])
+   endif
+
+   aMenu := xfor(aUK);
+             :map({|uk| oUserIbs(uk) });
+             :filter({|user| user:lCanRunIbs() });
+             :map({|user| {iif(uCreat:isUser(user),'> ','') + user:cFio, user} });
+             :sort({|x| x[1] });
+            :collect()
+
+   i := wb_Achoice(,,'Чьи права нужны',aMenu,,{|x| x[1] })
+return iif(i==0, oUserEmpty(), aMenu[i][2])
+
+
+******************************************************************************
+*
+*                  Восстановление данных об запустившем
+*                       
+Procedure ResetOtherUser()
+   SetUsCreat(UsReal())
+   SetUsRight(UsReal())
+   _aUK := NIL
+return
+
+
+******************************************************************************
+* Заглушка для совместимости
+Function GetOldUG()
+   ProgramError('Вызов устаревшей GetOldUG()')
+return NIL
+
+
+********************************************************************************
+//PP #ifdef _TESTUI_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//PP #endif
+********************************************************************************
+
+
+

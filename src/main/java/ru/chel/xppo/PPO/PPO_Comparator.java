@@ -31,9 +31,8 @@ public class PPO_Comparator {
                 if (!lineXBase.equals(lineXSharp)) {
                     break;
                 }
-                lastLineXBase = xbasePPO.get(i+1);
-                if (i+1 < xsharpPPO.size()) lastLineXSharp = xsharpPPO.get(i+1);
-                else lastLineXSharp = "";
+                lastLineXBase = (i+1 < xbasePPO.size()) ? xbasePPO.get(i+1) : "";
+                lastLineXSharp = (i+1 < xsharpPPO.size()) ? xsharpPPO.get(i+1) : "";
             }
             LOGGER.log(Level.WARNING, '[' +fileName + ']' + " size" + "\nXbase: " + lastLineXBase + "\nXSharp: " + lastLineXSharp);
         }

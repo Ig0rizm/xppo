@@ -46,8 +46,13 @@ public class PPO_Reader {
 
         while (i < lines.size()) {
             String line = lines.get(i);
-            if (!line.isEmpty() && (line.charAt(0) == '#' || line.charAt(0) == '*')) {
+            if (!line.isEmpty() && (line.charAt(0) == '*')) {
                 lines.remove(i);
+            }
+            else if (line.charAt(0) == '#') {
+                String sub = (String) line.subSequence(0, line.lastIndexOf('"')+1);
+                if (sub.equals(line)) lines.remove(i);
+                else lines.set(i, line.replace(sub, ""));
             }
             else if (line.contains("//")) {
                 int index = line.indexOf('/');
@@ -84,8 +89,37 @@ public class PPO_Reader {
         }
     }
 
+    private void concatenation() {
+        int i = 0;
+
+        while (i < lines.size()) {
+            String line = lines.get(i);
+
+            if (line.lastIndexOf(';') == line.length()-1) {
+                line = removeLastChar(line);
+                i++;
+                String nextLine = lines.get(i);
+                lines.remove(i);
+                while (nextLine.lastIndexOf(';') == nextLine.length()-1) {
+                    line += removeLastChar(nextLine);
+                    nextLine = lines.get(i);
+                    lines.remove(i);
+                }
+                line += nextLine;
+                i--;
+                lines.set(i, line);
+            }
+            i++;
+        }
+    }
+
+    private String removeLastChar(String s) {
+        return (s.length() == 0) ? "" : s.substring(0, s.length()-1);
+    }
+
     private void preparePPO() {
         removeSpaces();
         removeComments();
+        concatenation();
     }
 }

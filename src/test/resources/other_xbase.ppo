@@ -1,0 +1,288 @@
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH"@"STD.CH" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\Set.ch"@"Set.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\natmsg.ch"@"natmsg.ch" 
+#line 18 "C:\Users\Ig0ri\Desktop\src\ch\xpp\Set.ch" 
+#line 37 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\Get.ch"@"Get.ch" 
+#line 42 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\Prompt.ch"@"Prompt.ch" 
+#line 47 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\Memvar.ch"@"Memvar.ch" 
+#line 53 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\collat.ch"@"collat.ch" 
+#line 58 "C:\Users\Ig0ri\Desktop\src\ch\xpp\STD.CH" 
+#line 1 "other.prg" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\inkey.ch"@"inkey.ch" 
+#line 1 "other.prg" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch"@"bstd.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xpp\common.ch"@"common.ch" 
+#line 11 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch"@"btrdrv.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch"@"xppdrv.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\btrerr.ch"@"btrerr.ch" 
+#line 2 "C:\Users\Ig0ri\Desktop\src\ch\xppdrv.ch" 
+#line 12 "C:\Users\Ig0ri\Desktop\src\ch\btrdrv.ch" 
+
+
+
+MEMVAR Current_File
+#line 12 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\ut.ch"@"ut.ch" 
+#line 13 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\wp.ch"@"wp.ch" 
+#line 14 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch" 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+memvar promptlist
+
+
+
+
+
+
+
+MEMVAR D_EMPTY, D_MAX
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\xstd.ch"@"xstd.ch" 
+#line 173 "C:\Users\Ig0ri\Desktop\src\ch\bstd.ch" 
+#line 2 "other.prg" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\kontrol.ch"@"kontrol.ch" 
+#line 3 "other.prg" 
+#line 1 "C:\Users\Ig0ri\Desktop\src\ch\ismena.ch"@"ismena.ch" 
+
+
+memvar ismena
+#line 4 "other.prg" 
+
+static _aUK := NIL
+
+
+
+
+
+Function GetOtherUser(xAddUser)
+   local uReal  := UsReal()
+   local uCreat := UsCreat()
+   local uRight := NIL
+
+
+   if uReal:isProgrammer()
+      uCreat := _choiceUsCreat(uReal)
+      if uCreat:isEmpty()
+         ResetOtherUser()
+         return .f.
+      endif
+      SetUsCreat(uCreat)
+      _aUK := NIL 
+   endif
+
+
+   if _aUK==NIL
+
+      _aUK := aclone(_AUserKodsToProxy(uCreat))
+      aaddUnique(_aUK, uCreat:nKodIbs)  
+      do case 
+      case ( VALTYPE(xAddUser)=="A" );aeval(xAddUser,{|u| aaddUnique(_aUK,u) })
+      case ( VALTYPE(xAddUser)=="B" );eval(xAddUser, @_aUK)
+      endcase
+
+   elseif len(_aUK)==1 
+      ResetOtherUser()
+      return .f.
+   endif
+
+   uRight := _choiceUsRight(_aUK, uCreat)
+   if uRight:isEmpty()
+      ResetOtherUser()
+      return .f.
+   endif
+
+
+   if uReal:isProgrammer()
+
+      if   !uReal:isUser(uCreat) .or. !uReal:isUser(uRight)  
+         JControl(16 , uRight, '', 'зашел под именем:'+uCreat:cFio+' с правами: '+uRight:cFio, ArmName()+' Отладочный режим')
+      endif
+   else
+      if !uReal:isUser(uRight)
+         JControl(17 , uRight, '', 'зашел под именем: '+uRight:cFio, ArmName())
+      endif
+   endif
+
+
+   SetUsRight(uRight)
+
+   if getVyveskaWin()!=NIL 
+      SayVyveska(padr(uCreat:cFio + iif(uCreat:isUser(uRight),'','->'+uRight:cFio),MaxCoL()-18-16),MaxRow(),16,'bg+/n')
+   endif
+
+return .t.
+
+
+
+
+
+
+
+Function AUsersToProxy(oUser)
+
+
+
+return xfor(_AUserKodsToProxy(oUser)) :map({|uk| oUserIbs(uk) }) :filter({|user| user:lCanRunIbs() }) :collect()
+
+
+static function _AUserKodsToProxy(oUser)
+   static _nUK := 0
+   static _aUK := {}
+   if _nUK == oUser:nKodIbs
+      return _aUK
+   endif
+   _nUK := oUser:nKodIbs
+
+
+   _aUK := IterGE('info\ismena',0 ,{_nUK}):toArray('KOGO')
+
+
+
+
+
+
+
+
+   IterSQ({"select u.USER_KOD from IBS.STPRIK s, IBS.USERFIL u "    +"where u.DOSS_GLOBAL = s.KOD_ZAM "                       +"and    s.VID = 10  "          +"and s.STATUS = '1' "          +"and trunc(sysdate) between s.D1 and s.D2 "              +"and s.KOD=",oUser:nKodGlobal, "and u.ABS_KOD=",AbsKod()}) :forEach({|it| aaddUnique(_aUK, it:GF("USER_KOD") ) })
+
+return _aUK
+
+
+
+
+
+
+static function _choiceUsCreat(uReal)
+   local oUser, gg
+   local cKey  := left(ArmName(),8)+'\BUXNAME'
+   local cUser := padr(GetRegKey(cKey, uReal:cNetName, uReal:nKodIbs), 11)
+   w_Open(0,0,2,40,"┌─┐│┘─└│ ",'n/w','shadow',,,'center')
+   W_SetColor('gr+/w,w+/b')
+   DevPos(0, 1) ;DevOut('Введите имя : ' )
+   gg := get():new(row(),col(),{|_x| if(pcount()>0, cUser:=_x,cUser)},,'@!K')
+   gg:PostBlock := {|x| oUser:=oUserIbs(iif(val(x:buffer)!=0,val(x:buffer),x:buffer)),oUser:lCanRunIBS() }
+   lreadmodal({gg})
+   WCLOSE()
+   if lastkey()==27 
+      return oUserEmpty()
+   endif
+   SetRegKey(cKey, oUser:cNetName, uReal:nKodIbs)
+return oUser
+
+
+
+
+
+
+static function _choiceUsRight(aUK, uCreat)
+   local aMenu, i
+
+   if len(aUK)==1 
+      return oUserIbs(aUK[1])
+   endif
+
+
+
+
+
+
+   aMenu := xfor(aUK) :map({|uk| oUserIbs(uk) }) :filter({|user| user:lCanRunIbs() }) :map({|user| {iif(uCreat:isUser(user),'> ','') + user:cFio, user} }) :sort({|x| x[1] }) :collect()
+
+   i := wb_Achoice(,,'Чьи права нужны',aMenu,,{|x| x[1] })
+return iif(i==0, oUserEmpty(), aMenu[i][2])
+
+
+
+
+
+
+Procedure ResetOtherUser()
+   SetUsCreat(UsReal())
+   SetUsRight(UsReal())
+   _aUK := NIL
+return
+
+
+
+
+Function GetOldUG()
+   ProgramError('Вызов устаревшей GetOldUG()')
+return NIL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
