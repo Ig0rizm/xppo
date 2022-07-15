@@ -28,7 +28,7 @@ public class PPO_Reader {
     }
 
     private boolean isComment(String line, int index) {
-        return line.charAt(index+1) == '/';
+        return (line.charAt(index+1) == '/' || line.charAt(index+1) == '*');
     }
 
     private void removeSpaces() {
@@ -49,7 +49,7 @@ public class PPO_Reader {
             if (!line.isEmpty() && (line.charAt(0) == '#' || line.charAt(0) == '*' || line.contains("/*") || line.contains("*/"))) {
                 lines.remove(i);
             }
-            else if (!line.isEmpty() && line.contains("//")) {
+            else if (line.contains("//")) {
                 int index = line.indexOf('/');
                 while (!isComment(line, index)) {
                     index = line.indexOf('/', index+1);
