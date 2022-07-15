@@ -46,7 +46,7 @@ public class PPO_Reader {
 
         while (i < lines.size()) {
             String line = lines.get(i);
-            if (!line.isEmpty() && (line.charAt(0) == '#' || line.charAt(0) == '*' || line.contains("/*") || line.contains("*/"))) {
+            if (!line.isEmpty() && (line.charAt(0) == '#' || line.charAt(0) == '*')) {
                 lines.remove(i);
             }
             else if (line.contains("//")) {
@@ -59,6 +59,25 @@ public class PPO_Reader {
                     String sub = (String) line.subSequence(0, index);
                     lines.set(i, sub);
                     i++;
+                }
+            }
+            else if (line.contains("/*")) {
+                int index = line.indexOf('/');
+                while (!isComment(line, index)) {
+                    index = line.indexOf('/', index+1);
+                }
+                if (!line.contains("*/")) {
+                    while (!line.contains("*/")) {
+                        lines.remove(i);
+                        line = lines.get(i);
+                    }
+                    lines.remove(i);
+                }
+                else {
+                    String sub = (String) line.subSequence(index, line.indexOf('/', index+1)+1);
+                    lines.set(i, line.replace(sub, ""));
+                    if (lines.get(i).equals("")) lines.remove(i);
+                    else i++;
                 }
             }
             else i++;

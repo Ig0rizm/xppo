@@ -23,7 +23,19 @@ public class PPO_Comparator {
             }
         }
         else {
-            LOGGER.log(Level.WARNING, '[' +fileName + ']' + " size");
+            String lastLineXBase = "";
+            String lastLineXSharp = "";
+            for (int i = 0; i < xbasePPO.size() && i < xsharpPPO.size(); i++) {
+                String lineXBase = xbasePPO.get(i);
+                String lineXSharp = xsharpPPO.get(i);
+                if (!lineXBase.equals(lineXSharp)) {
+                    break;
+                }
+                lastLineXBase = xbasePPO.get(i+1);
+                if (i+1 < xsharpPPO.size()) lastLineXSharp = xsharpPPO.get(i+1);
+                else lastLineXSharp = "";
+            }
+            LOGGER.log(Level.WARNING, '[' +fileName + ']' + " size" + "\nXbase: " + lastLineXBase + "\nXSharp: " + lastLineXSharp);
         }
     }
 
