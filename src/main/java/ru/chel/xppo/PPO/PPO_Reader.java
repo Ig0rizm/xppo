@@ -46,13 +46,13 @@ public class PPO_Reader {
 
         while (i < lines.size()) {
             String line = lines.get(i);
-            if (!line.isEmpty() && (line.charAt(0) == '*')) {
-                lines.remove(i);
-            }
-            else if (line.charAt(0) == '#') {
-                String sub = (String) line.subSequence(0, line.lastIndexOf('"')+1);
+            if (line.contains("#line")) {
+                String sub = (String) line.subSequence(0, line.lastIndexOf('"') + 1);
                 if (sub.equals(line)) lines.remove(i);
                 else lines.set(i, line.replace(sub, ""));
+            }
+            else if (!line.isEmpty() && ((line.charAt(0) == '*') || (line.charAt(0) == '#'))) {
+                lines.remove(i);
             }
             else if (line.contains("//")) {
                 int index = line.indexOf('/');
