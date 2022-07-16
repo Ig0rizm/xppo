@@ -1,5 +1,9 @@
 package ru.chel.xppo.PPO;
 
+import ru.chel.xppo.settings.Arguments;
+import ru.chel.xppo.utils.FileChecker;
+import ru.chel.xppo.utils.OutputWriter;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +27,13 @@ public class PPO_Reader {
         }
 
         preparePPO();
+
+        File outputPPOFile;
+        if (Arguments.PPO) {
+            outputPPOFile = new File(String.valueOf(
+                    FileChecker.createFileIfNot("./ppoOutput/" + ppoFile.getName() + "_" + ppoFile.getParentFile().getName() + ".txt")));
+            OutputWriter.write(outputPPOFile, lines);
+        }
 
         return lines;
     }

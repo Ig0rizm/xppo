@@ -1,13 +1,7 @@
 package ru.chel.xppo.PPO;
 
-import ru.chel.xppo.logging.LogHandler;
-import ru.chel.xppo.logging.PPO_LogFormatter;
-import ru.chel.xppo.utils.FolderChecker;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class PPO_Comparator {
@@ -36,17 +30,6 @@ public class PPO_Comparator {
                 lastLineXSharp = (i+1 < xsharpPPO.size()) ? xsharpPPO.get(i+1) : "";
             }
             LOGGER.log(Level.WARNING, '[' +fileName + ']' + " size" + "\nXbase: " + lastLineXBase + "\nXSharp: " + lastLineXSharp);
-        }
-    }
-
-    public static void setLogger() {
-        try {
-            FolderChecker.createFolderIfNot("logs");
-            LogManager.getLogManager().reset();
-            LOGGER.addHandler(new LogHandler("logs/log_%g.txt", new PPO_LogFormatter()));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }
