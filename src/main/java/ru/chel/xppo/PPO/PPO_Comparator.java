@@ -2,6 +2,7 @@ package ru.chel.xppo.PPO;
 
 import ru.chel.xppo.logging.LogHandler;
 import ru.chel.xppo.logging.PPO_LogFormatter;
+import ru.chel.xppo.utils.FolderChecker;
 
 import java.io.IOException;
 import java.util.List;
@@ -40,6 +41,7 @@ public class PPO_Comparator {
 
     public static void setLogger() {
         try {
+            FolderChecker.createFolderIfNot("logs");
             LogManager.getLogManager().reset();
             LOGGER.addHandler(new LogHandler("logs/log_%g.txt", new PPO_LogFormatter()));
         }

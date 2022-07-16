@@ -89,7 +89,7 @@ public class PPO_Reader {
         }
     }
 
-    private void concatenation() {
+    private void concatenationLines() {
         int i = 0;
 
         while (i < lines.size()) {
@@ -120,6 +120,6 @@ public class PPO_Reader {
     private void preparePPO() {
         removeSpaces();
         removeComments();
-        concatenation();
+        concatenationLines();
     }
 }

@@ -2,6 +2,7 @@ package ru.chel.xppo;
 
 import ru.chel.xppo.PPO.PPO_Comparator;
 import ru.chel.xppo.PPO.PPO_Reader;
+import ru.chel.xppo.utils.FolderChecker;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +16,7 @@ public class Main {
         PPO_Comparator.setLogger();
 
         Properties properties = new Properties();
+        FolderChecker.createFolderIfNot("configs");
         properties.load(new FileInputStream("./configs/path.properties"));
         String XBasePath = properties.getProperty("xbase");
         String XSharpPath = properties.getProperty("xsharp");
