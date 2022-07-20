@@ -82,6 +82,10 @@ public class PPO_Reader {
                 while (!isComment(line, index)) {
                     index = line.indexOf('/', index+1);
                 }
+                if (index != 0 && line.charAt(index-1) == '*') {
+                    i++;
+                    continue;
+                }
                 if (!line.contains("*/")) {
                     while (!line.contains("*/")) {
                         lines.remove(i);
